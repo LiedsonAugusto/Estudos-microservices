@@ -1,0 +1,26 @@
+package com.estudo.userService.dtos;
+
+import com.estudo.userService.validators.ValidCPF;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+public record RegisterRequest(@NotBlank(message = "Nome é obrigatório")
+                              String name,
+
+                              @NotBlank(message = "Email é obrigatório")
+                              @Email(message = "Email inválido")
+                              String email,
+
+                              @NotBlank(message = "CPF é obrigatório")
+                              @ValidCPF
+                              String cpf,
+
+                              @NotBlank(message = "Senha é obrigatória")
+                              @Size(min = 8, message = "Senha deve ter no mínimo 8 caracteres")
+                              @Size(max = 22, message = "Senha deve ter no máximo 22 caracteres")
+                              String password,
+
+                              @NotBlank(message = "Telefone é obrigatório")
+                              String phone) {
+}

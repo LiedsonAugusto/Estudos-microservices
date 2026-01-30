@@ -1,0 +1,102 @@
+# ============================================
+# USER SERVICE - CONFIGURAÇÃO DE EXEMPLO
+# ============================================
+#
+# Este é um arquivo de exemplo. Para usar:
+# 1. Copie este arquivo e renomeie para: application.properties
+# 2. Substitua os valores de exemplo pelas suas credenciais reais
+# 3. NUNCA faça commit do application.properties (está no .gitignore)
+#
+
+# ============================================
+# APLICAÇÃO
+# ============================================
+spring.application.name=userService
+server.port=8081
+
+# ============================================
+# DATABASE - PostgreSQL
+# ============================================
+# Conexão com o banco de dados PostgreSQL
+# Certifique-se de criar o banco antes de rodar a aplicação:
+#   createdb users_db
+#
+spring.datasource.url=jdbc:postgresql://localhost:5432/users_db
+spring.datasource.username=postgres
+spring.datasource.password=SUA_SENHA_AQUI
+
+# ============================================
+# JPA / HIBERNATE
+# ============================================
+# ddl-auto opções:
+#   - update: Atualiza schema automaticamente (desenvolvimento)
+#   - validate: Apenas valida o schema (produção com Flyway)
+#   - create-drop: Cria e deleta ao reiniciar (testes)
+#
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+
+# ============================================
+# JWT CONFIGURATION
+# ============================================
+# IMPORTANTE: Gere uma chave secreta forte em Base64
+# Nunca use a mesma chave em desenvolvimento e produção!
+#
+# Para gerar uma chave segura, use:
+#   openssl rand -base64 64
+#
+jwt.secret=GERE_UMA_CHAVE_BASE64_SEGURA_AQUI
+jwt.expiration=86400000
+
+# Explicação:
+# jwt.expiration está em milissegundos
+# 86400000 ms = 24 horas
+# Para 1 hora: 3600000
+# Para 7 dias: 604800000
+
+# ============================================
+# RABBITMQ CONFIGURATION
+# ============================================
+# Opção 1: CloudAMQP (cloud gratuito)
+# Obtenha em: https://www.cloudamqp.com/
+# Formato: amqps://usuario:senha@servidor.cloudamqp.com/vhost
+#
+spring.rabbitmq.addresses=amqps://USUARIO:SENHA@SERVIDOR.cloudamqp.com/VHOST
+
+# Opção 2: RabbitMQ Local (Docker)
+# Descomente as linhas abaixo e comente a linha acima
+#
+# spring.rabbitmq.host=localhost
+# spring.rabbitmq.port=5672
+# spring.rabbitmq.username=guest
+# spring.rabbitmq.password=guest
+
+# Exchange onde eventos de usuário são publicados
+rabbitmq.exchange.user=user.exchange
+
+# Routing Keys - Eventos de Usuário
+rabbitmq.routingkey.user.created=user.created
+
+# ============================================
+# NOTAS IMPORTANTES
+# ============================================
+#
+# SEGURANÇA:
+# - Nunca exponha credenciais em repositórios públicos
+# - Use variáveis de ambiente em produção
+# - Rotacione chaves JWT periodicamente
+#
+# AMBIENTES:
+# - Mantenha configurações separadas por ambiente
+# - Use profiles do Spring: application-dev.properties, application-prod.properties
+#
+# RABBITMQ:
+# - Se usar CloudAMQP free tier: limite de 1M mensagens/mês
+# - Se usar Docker local: sem limites, mas precisa rodar o container
+#
+# BANCO DE DADOS:
+# - Em produção, use um usuário com permissões limitadas
+# - Não use 'postgres' como usuário em produção
+# - Configure SSL para conexões em produção
+#
