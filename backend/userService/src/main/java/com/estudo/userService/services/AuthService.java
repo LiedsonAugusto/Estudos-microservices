@@ -16,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Service
 public class AuthService {
@@ -61,7 +62,13 @@ public class AuthService {
         userProducer.publishUserCreatedEvent(savedUser);
 
         var userDetails = new CustomUserDetails(savedUser);
-        var accessToken = jwtService.generateToken(userDetails);
+
+        Map<String, Object> extraClaims = Map.of(
+                "role", savedUser.getRole().name(),
+                "userId", savedUser.getId().toString()
+        );
+
+        var accessToken = jwtService.generateToken(extraClaims, userDetails);
 
         return new AuthResponse(accessToken, mapToUserResponse(savedUser));
     }
@@ -75,7 +82,13 @@ public class AuthService {
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
 
         var userDetails = new CustomUserDetails(user);
-        var accessToken = jwtService.generateToken(userDetails);
+
+        Map<String, Object> extraClaims = Map.of(
+                "role", user.getRole().name(),
+                "userId", user.getId().toString()
+        );
+
+        var accessToken = jwtService.generateToken(extraClaims, userDetails);
 
         return new AuthResponse(accessToken, mapToUserResponse(user));
     }

@@ -51,6 +51,9 @@ public class JwtService {
         return buildToken(extraClaims, userDetails, expiration);
     }
 
+    // Nota importante: Para que extractRole e extractUserId funcionem, o userService precisa incluir essas claims no token na hora da geração (no buildToken). Se o seu userService atualmente só coloca o subject (email), você vai
+    // precisar ajustar lá para adicionar role e userId como extra claims. Caso contrário, você pode extrair a role diretamente do subject/username e ignorar esses métodos por ora — depende de como seu token é estruturado.
+
     private String buildToken(Map<String, Object> extraClaims, UserDetails userDetails, long expiration) {
         return Jwts.builder()
                 .claims(extraClaims)

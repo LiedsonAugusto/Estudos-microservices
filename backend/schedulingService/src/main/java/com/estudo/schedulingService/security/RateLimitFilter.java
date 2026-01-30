@@ -1,4 +1,4 @@
-package com.estudo.userService.security;
+package com.estudo.schedulingService.security;
 
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
@@ -10,14 +10,13 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-
-import java.io.IOException;
-import java.time.Duration;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import java.util.concurrent.TimeUnit;
+
+
+import java.io.IOException;
+import java.time.Duration;
 
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
@@ -25,6 +24,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final Cache<String, Bucket> cache = Caffeine.newBuilder()
             .expireAfterAccess(5, TimeUnit.MINUTES)
             .build();
+
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
