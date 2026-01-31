@@ -15,7 +15,7 @@ public class TimeSlot {
 
     @ManyToOne
     @JoinColumn(name = "service_id", nullable = false)
-    private Service service;
+    private Services service;
 
     @Column(nullable = false)
     private LocalDate date;
