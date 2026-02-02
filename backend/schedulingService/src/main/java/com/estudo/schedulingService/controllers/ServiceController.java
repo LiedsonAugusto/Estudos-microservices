@@ -72,22 +72,21 @@ public class ServiceController {
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ServiceResponse> getServiceById(@PathVariable UUID id) {
-        // TODO: implementar
-        return null;
+        return ResponseEntity.ok(servicesService.getServiceById(id));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ServiceResponse> putServiceById(@PathVariable UUID id) {
-        // TODO: implementar
-        return null;
+    public ResponseEntity<ServiceResponse> putServiceById(@PathVariable UUID id,
+                                                           @Valid @RequestBody CreateServiceRequest serviceDTO) {
+        return ResponseEntity.ok(servicesService.updateService(id, serviceDTO));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteServiceById(@PathVariable UUID id) {
-        // TODO: implementar
-        return null;
+        servicesService.deleteService(id);
+        return ResponseEntity.noContent().build();
     }
 
     private Pageable createPageable(int page, int size, String sortBy, String direction) {

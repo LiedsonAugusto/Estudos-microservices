@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class ServicesService {
@@ -93,6 +94,38 @@ public class ServicesService {
                 servicesPage.isFirst(),
                 servicesPage.isLast()
         );
+    }
+
+    public ServiceResponse getServiceById(UUID id) {
+        Services service = serviceRespository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Serviço não encontrado"));
+        return mapToServiceResponse(service);
+    }
+
+    @Transactional
+    public ServiceResponse updateService(UUID id, CreateServiceRequest serviceDTO) {
+        Services service = serviceRespository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Serviço não encontrado"));
+
+        if (!service.getName().equals(serviceDTO.name()) &&
+                serviceRespository.existsByName(serviceDTO.name())) {
+            throw new IllegalArgumentException("Já existe um serviço com este nome");
+        }
+
+        service.setName(serviceDTO.name());
+        service.setDescription(serviceDTO.description());
+        service.setDurationMinutes(serviceDTO.durationMinutes());
+
+        Services updatedService = serviceRespository.save(service);
+        return mapToServiceResponse(updatedService);
+    }
+
+    @Transactional
+    public void deleteService(UUID id) {
+        Services service = serviceRespository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Serviço não encontrado"));
+        service.setActive(false);
+        serviceRespository.save(service);
     }
 
     public ServiceResponse mapToServiceResponse(Services service) {
