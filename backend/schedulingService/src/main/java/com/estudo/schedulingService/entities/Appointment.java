@@ -2,11 +2,19 @@ package com.estudo.schedulingService.entities;
 
 import com.estudo.schedulingService.enums.AppointmentStatus;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
 @Table(name = "appointments")
 public class Appointment {
     @Id

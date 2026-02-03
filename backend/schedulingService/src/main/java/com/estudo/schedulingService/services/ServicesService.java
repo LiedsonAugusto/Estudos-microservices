@@ -4,6 +4,8 @@ import com.estudo.schedulingService.dtos.CreateServiceRequest;
 import com.estudo.schedulingService.dtos.PageResponse;
 import com.estudo.schedulingService.dtos.ServiceResponse;
 import com.estudo.schedulingService.entities.Services;
+import com.estudo.schedulingService.exceptions.ServiceAlreadyExistsException;
+import com.estudo.schedulingService.exceptions.ServiceNotFoundException;
 import com.estudo.schedulingService.repositories.ServicesRespository;
 import com.estudo.schedulingService.specifications.ServicesSpecification;
 import jakarta.transaction.Transactional;
@@ -29,7 +31,7 @@ public class ServicesService {
     public ServiceResponse create(CreateServiceRequest serviceDTO) {
 
         if (serviceRespository.existsByName(serviceDTO.name())) {
-            throw new IllegalArgumentException("Já existe um serviço com este nome");
+            throw new ServiceAlreadyExistsException(serviceDTO.name());
         }
 
         Services serviceCreate = new Services();
@@ -98,18 +100,18 @@ public class ServicesService {
 
     public ServiceResponse getServiceById(UUID id) {
         Services service = serviceRespository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Serviço não encontrado"));
+                .orElseThrow(() -> new ServiceNotFoundException("Serviço não encontrado"));
         return mapToServiceResponse(service);
     }
 
     @Transactional
     public ServiceResponse updateService(UUID id, CreateServiceRequest serviceDTO) {
         Services service = serviceRespository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Serviço não encontrado"));
+                .orElseThrow(() -> new ServiceNotFoundException("Serviço não encontrado"));
 
         if (!service.getName().equals(serviceDTO.name()) &&
                 serviceRespository.existsByName(serviceDTO.name())) {
-            throw new IllegalArgumentException("Já existe um serviço com este nome");
+            throw new ServiceAlreadyExistsException(serviceDTO.name());
         }
 
         service.setName(serviceDTO.name());
@@ -123,7 +125,7 @@ public class ServicesService {
     @Transactional
     public void deleteService(UUID id) {
         Services service = serviceRespository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Serviço não encontrado"));
+                .orElseThrow(() -> new ServiceNotFoundException("Serviço não encontrado"));
         service.setActive(false);
         serviceRespository.save(service);
     }
