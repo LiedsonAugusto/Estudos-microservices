@@ -1,6 +1,7 @@
 package com.estudo.schedulingService.services;
 
 import com.estudo.schedulingService.dtos.AppointmentResponse;
+import com.estudo.schedulingService.dtos.CancelAppointmentRequest;
 import com.estudo.schedulingService.dtos.CreateAppointmentRequest;
 import com.estudo.schedulingService.dtos.TimeSlotResponse;
 import com.estudo.schedulingService.entities.Appointment;
@@ -9,6 +10,7 @@ import com.estudo.schedulingService.enums.AppointmentStatus;
 import com.estudo.schedulingService.exceptions.AppointmentNotFoundException;
 import com.estudo.schedulingService.exceptions.NoSlotsAvailableException;
 import com.estudo.schedulingService.exceptions.TimeSlotNotFoundException;
+import com.estudo.schedulingService.producers.AppointmentProducer;
 import com.estudo.schedulingService.repositories.AppointmentRepository;
 import com.estudo.schedulingService.repositories.TimeSlotRepository;
 import com.estudo.schedulingService.security.JwtService;
@@ -17,6 +19,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
@@ -30,17 +33,20 @@ public class AppointmentService {
     private final TimeSlotService timeSlotService;
     private final JwtService jwtService;
     private final HttpServletRequest request;
+    private final AppointmentProducer  appointmentProducer;
 
     public AppointmentService(AppointmentRepository appointmentRepository,
                               TimeSlotRepository timeSlotRepository,
                               TimeSlotService timeSlotService,
                               JwtService jwtService,
-                              HttpServletRequest request) {
+                              HttpServletRequest request,
+                              AppointmentProducer appointmentProducer) {
         this.appointmentRepository = appointmentRepository;
         this.timeSlotRepository = timeSlotRepository;
         this.timeSlotService = timeSlotService;
         this.jwtService = jwtService;
         this.request = request;
+        this.appointmentProducer = appointmentProducer;
     }
 
     @Transactional
@@ -62,6 +68,36 @@ public class AppointmentService {
             throw new NoSlotsAvailableException("Não há mais vagas disponíveis para este horário");
         }
 
+        // Validar se o usuário já tem agendamento no mesmo horário
+        List<AppointmentStatus> excludedStatuses = List.of(
+                AppointmentStatus.CANCELLED,
+                AppointmentStatus.NO_SHOW
+        );
+
+        boolean hasAppointmentInSameTimeSlot = appointmentRepository.existsActiveAppointmentForUserInTimeSlot(
+                userId,
+                timeSlot.getId(),
+                excludedStatuses
+        );
+
+        if (hasAppointmentInSameTimeSlot) {
+            throw new IllegalArgumentException("Você já possui um agendamento neste horário");
+        }
+
+        // Validar se o usuário já tem agendamento para o mesmo serviço no mesmo dia
+        boolean hasAppointmentForServiceInDate = appointmentRepository.existsActiveAppointmentForUserInServiceAndDate(
+                userId,
+                timeSlot.getService().getId(),
+                timeSlot.getDate(),
+                excludedStatuses
+        );
+
+        if (hasAppointmentForServiceInDate) {
+            throw new IllegalArgumentException(
+                    "Você já possui um agendamento para este serviço na data " + timeSlot.getDate()
+            );
+        }
+
         Appointment appointment = new Appointment();
         appointment.setUserId(userId);
         appointment.setUserEmail(userEmail);
@@ -76,6 +112,8 @@ public class AppointmentService {
 
         timeSlot.setBookedCount(timeSlot.getBookedCount() + 1);
         timeSlotRepository.save(timeSlot);
+
+        appointmentProducer.publishAppointmentCreated(savedAppointment);
 
         return mapToAppointmentResponse(savedAppointment);
     }
@@ -155,6 +193,121 @@ public class AppointmentService {
         }
 
         return code.toString();
+    }
+
+    @Transactional
+    public AppointmentResponse cancelAppointment(UUID id, CancelAppointmentRequest cancelRequest) {
+        String token = extractTokenFromRequest();
+        UUID userId = jwtService.extractUserId(token);
+        String role = jwtService.extractRole(token);
+
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new AppointmentNotFoundException("Agendamento não encontrado"));
+
+        if (!"ADMIN".equals(role) && !appointment.getUserId().equals(userId)) {
+            throw new AppointmentNotFoundException("Agendamento não encontrado");
+        }
+
+        if (appointment.getStatus() == AppointmentStatus.CANCELLED) {
+            throw new IllegalArgumentException("Este agendamento já foi cancelado");
+        }
+
+        if (appointment.getStatus() == AppointmentStatus.COMPLETED) {
+            throw new IllegalArgumentException("Não é possível cancelar um agendamento já concluído");
+        }
+
+        if (appointment.getStatus() == AppointmentStatus.NO_SHOW) {
+            throw new IllegalArgumentException("Não é possível cancelar um agendamento marcado como não comparecido");
+        }
+
+        TimeSlot timeSlot = appointment.getTimeSlot();
+        LocalDateTime appointmentDateTime = LocalDateTime.of(timeSlot.getDate(), timeSlot.getStartTime());
+        LocalDateTime now = LocalDateTime.now();
+        long hoursUntilAppointment = ChronoUnit.HOURS.between(now, appointmentDateTime);
+
+        if (hoursUntilAppointment < 24) {
+            throw new IllegalArgumentException("Cancelamento só é permitido até 24 horas antes do horário agendado");
+        }
+
+        appointment.setStatus(AppointmentStatus.CANCELLED);
+        appointment.setCancellationReason(cancelRequest.reason());
+        appointment.setUpdatedAt(LocalDateTime.now());
+
+        Appointment updatedAppointment = appointmentRepository.save(appointment);
+
+        timeSlot.setBookedCount(timeSlot.getBookedCount() - 1);
+        timeSlotRepository.save(timeSlot);
+
+        appointmentProducer.publishAppointmentCancelled(updatedAppointment, cancelRequest.reason());
+
+        return mapToAppointmentResponse(updatedAppointment);
+    }
+
+    @Transactional
+    public AppointmentResponse confirmAppointment(UUID id) {
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new AppointmentNotFoundException("Agendamento não encontrado"));
+
+        if (appointment.getStatus() != AppointmentStatus.SCHEDULED) {
+            throw new IllegalArgumentException(
+                    "Apenas agendamentos com status SCHEDULED podem ser confirmados. Status atual: " + appointment.getStatus()
+            );
+        }
+
+        appointment.setStatus(AppointmentStatus.CONFIRMED);
+        appointment.setUpdatedAt(LocalDateTime.now());
+
+        Appointment updatedAppointment = appointmentRepository.save(appointment);
+
+        return mapToAppointmentResponse(updatedAppointment);
+    }
+
+    @Transactional
+    public AppointmentResponse completeAppointment(UUID id) {
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new AppointmentNotFoundException("Agendamento não encontrado"));
+
+        if (appointment.getStatus() != AppointmentStatus.CONFIRMED && appointment.getStatus() != AppointmentStatus.SCHEDULED) {
+            throw new IllegalArgumentException(
+                    "Apenas agendamentos com status CONFIRMED ou SCHEDULED podem ser marcados como completados. Status atual: " + appointment.getStatus()
+            );
+        }
+
+        appointment.setStatus(AppointmentStatus.COMPLETED);
+        appointment.setUpdatedAt(LocalDateTime.now());
+
+        Appointment updatedAppointment = appointmentRepository.save(appointment);
+
+        return mapToAppointmentResponse(updatedAppointment);
+    }
+
+    @Transactional
+    public AppointmentResponse markAsNoShow(UUID id) {
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new AppointmentNotFoundException("Agendamento não encontrado"));
+
+        if (appointment.getStatus() == AppointmentStatus.CANCELLED) {
+            throw new IllegalArgumentException("Não é possível marcar como não comparecido um agendamento cancelado");
+        }
+
+        if (appointment.getStatus() == AppointmentStatus.COMPLETED) {
+            throw new IllegalArgumentException("Não é possível marcar como não comparecido um agendamento já concluído");
+        }
+
+        if (appointment.getStatus() == AppointmentStatus.NO_SHOW) {
+            throw new IllegalArgumentException("Este agendamento já está marcado como não comparecido");
+        }
+
+        appointment.setStatus(AppointmentStatus.NO_SHOW);
+        appointment.setUpdatedAt(LocalDateTime.now());
+
+        Appointment updatedAppointment = appointmentRepository.save(appointment);
+
+        TimeSlot timeSlot = appointment.getTimeSlot();
+        timeSlot.setBookedCount(timeSlot.getBookedCount() - 1);
+        timeSlotRepository.save(timeSlot);
+
+        return mapToAppointmentResponse(updatedAppointment);
     }
 
     private AppointmentResponse mapToAppointmentResponse(Appointment appointment) {
