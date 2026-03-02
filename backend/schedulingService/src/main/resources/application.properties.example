@@ -1,0 +1,67 @@
+# ============================================
+# APPLICATION PROPERTIES - EXEMPLO
+# ============================================
+#
+# Este é um arquivo de exemplo. Para usar:
+# 1. Copie este arquivo para 'application.properties' no mesmo diretório
+# 2. Substitua os valores de exemplo pelas suas credenciais reais
+# 3. NUNCA commite o arquivo application.properties (ele está no .gitignore)
+#
+
+# ============================================
+# CONFIGURAÇÕES DA APLICAÇÃO
+# ============================================
+spring.application.name=schedulingService
+
+# Porta do serviço
+server.port=8082
+
+# ============================================
+# CONFIGURAÇÕES DO BANCO DE DADOS (PostgreSQL)
+# ============================================
+# URL de conexão com o banco de dados
+# Formato: jdbc:postgresql://[host]:[porta]/[nome-do-banco]
+spring.datasource.url=jdbc:postgresql://localhost:5432/schedulings_db
+
+# Credenciais do banco de dados
+spring.datasource.username=postgres
+spring.datasource.password=SUA_SENHA_AQUI
+
+# ============================================
+# CONFIGURAÇÕES DE JWT (Autenticação)
+# ============================================
+# Secret do JWT - DEVE ser uma chave segura de 256 bits em Base64
+# Gere uma nova chave em: https://generate-secret.vercel.app/64
+# Ou use: openssl rand -base64 64
+jwt.secret=SUA_CHAVE_SECRETA_BASE64_DE_256_BITS_AQUI
+
+# Tempo de expiração do token em milissegundos
+# 86400000 ms = 24 horas
+jwt.expiration=86400000
+
+# ============================================
+# CONFIGURAÇÕES DO RABBITMQ
+# ============================================
+# Opção 1: RabbitMQ hospedado (CloudAMQP)
+# Formato: amqps://[usuario]:[senha]@[host]/[vhost]
+spring.rabbitmq.addresses=amqps://usuario:senha@seu-host.cloudamqp.com/vhost
+
+# Opção 2: RabbitMQ Local (descomente as linhas abaixo e comente a linha acima)
+# spring.rabbitmq.host=localhost
+# spring.rabbitmq.port=5672
+# spring.rabbitmq.username=guest
+# spring.rabbitmq.password=guest
+
+# ============================================
+# CONFIGURAÇÕES DE EXCHANGES E FILAS
+# ============================================
+# Exchange de agendamentos
+rabbitmq.exchange.scheduling=scheduling.exchange
+
+# Fila de emails (consumida pelo Email Service)
+rabbitmq.queue.email=email.queue
+
+# Routing Keys para eventos
+rabbitmq.routingkey.appointment.created=appointment.created
+rabbitmq.routingkey.appointment.cancelled=appointment.cancelled
+rabbitmq.routingkey.appointment.reminder=appointment.reminder

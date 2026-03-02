@@ -1,11 +1,12 @@
 package com.estudo.emailService.consumers;
 
 import com.estudo.emailService.dtos.UserCreatedEvent;
+import com.estudo.emailService.exceptions.EmailSendingException;
+import com.estudo.emailService.exceptions.InvalidEventDataException;
 import com.estudo.emailService.services.EmailService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -29,12 +30,15 @@ public class UserEventConsumer {
         log.info("Email: {}", event.email());
         log.info("Timestamp: {}", event.timestamp());
         log.info("============================================");
-        try{
+
+        try {
             emailService.sendEmailToUserCreated(event);
             log.info("✅ Evento processado com sucesso!");
-        }catch (Exception e) {
-            log.error("❌ ERRO ao enviar email para {}: {}", event.email(), e.getMessage());
-            log.error("Stack trace:", e);
+        } catch (InvalidEventDataException e) {
+            log.error("❌ DADOS INVÁLIDOS no evento UserCreated [id={}]: {}", event.userId(), e.getMessage());
+        } catch (EmailSendingException e) {
+            log.error("❌ FALHA NO ENVIO do email para {} [id={}]: {}", event.email(), event.userId(), e.getMessage());
+            throw e;
         }
     }
 }

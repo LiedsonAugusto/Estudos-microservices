@@ -6,6 +6,9 @@ import com.estudo.userService.dtos.RegisterRequest;
 import com.estudo.userService.dtos.UserResponse;
 import com.estudo.userService.entities.User;
 import com.estudo.userService.enums.UserRole;
+import com.estudo.userService.exceptions.CpfAlreadyExistsException;
+import com.estudo.userService.exceptions.EmailAlreadyExistsException;
+import com.estudo.userService.exceptions.UserNotFoundException;
 import com.estudo.userService.producers.UserProducer;
 import com.estudo.userService.repository.UserRepository;
 import com.estudo.userService.security.CustomUserDetails;
@@ -39,11 +42,11 @@ public class AuthService {
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.email())) {
-            throw new IllegalArgumentException("Email já cadastrado");
+            throw new EmailAlreadyExistsException();
         }
 
         if (userRepository.existsByCpf(request.cpf())) {
-            throw new IllegalArgumentException("CPF já cadastrado");
+            throw new CpfAlreadyExistsException();
         }
 
         var user = new User();
@@ -79,7 +82,7 @@ public class AuthService {
         );
 
         var user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
+                .orElseThrow(UserNotFoundException::new);
 
         var userDetails = new CustomUserDetails(user);
 

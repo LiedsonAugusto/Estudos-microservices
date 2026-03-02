@@ -7,6 +7,12 @@ import com.estudo.schedulingService.dtos.ServiceResponse;
 import com.estudo.schedulingService.dtos.TimeSlotResponse;
 import com.estudo.schedulingService.entities.Services;
 import com.estudo.schedulingService.entities.TimeSlot;
+import com.estudo.schedulingService.exceptions.InactiveServiceException;
+import com.estudo.schedulingService.exceptions.InvalidTimeRangeException;
+import com.estudo.schedulingService.exceptions.ServiceNotFoundException;
+import com.estudo.schedulingService.exceptions.TimeSlotConflictException;
+import com.estudo.schedulingService.exceptions.TimeSlotHasBookingsException;
+import com.estudo.schedulingService.exceptions.TimeSlotNotFoundException;
 import com.estudo.schedulingService.repositories.ServicesRespository;
 import com.estudo.schedulingService.repositories.TimeSlotRepository;
 import com.estudo.schedulingService.specifications.TimeSlotSpecification;
@@ -41,14 +47,14 @@ public class TimeSlotService {
     public TimeSlotResponse create(CreateTimeSlotRequest request) {
 
         Services service = servicesRepository.findById(request.serviceId())
-                .orElseThrow(() -> new IllegalArgumentException("Serviço não encontrado"));
+                .orElseThrow(() -> new ServiceNotFoundException("Serviço não encontrado com ID: " + request.serviceId()));
 
         if (!service.isActive()) {
-            throw new IllegalArgumentException("Não é possível criar horário para um serviço inativo");
+            throw new InactiveServiceException("Não é possível criar horário para um serviço inativo");
         }
 
         if (!request.endTime().isAfter(request.startTime())) {
-            throw new IllegalArgumentException("O horário de término deve ser após o horário de início");
+            throw new InvalidTimeRangeException("O horário de término deve ser após o horário de início");
         }
 
         boolean hasConflict = timeSlotRepository.existsConflictingTimeSlot(
@@ -59,7 +65,7 @@ public class TimeSlotService {
         );
 
         if (hasConflict) {
-            throw new IllegalArgumentException("Já existe um horário cadastrado que conflita com este período");
+            throw new TimeSlotConflictException("Já existe um horário cadastrado que conflita com este período");
         }
 
         // 4. Criar a entidade
@@ -79,18 +85,18 @@ public class TimeSlotService {
     @Transactional
     public List<TimeSlotResponse> createBatch(CreateTimeSlotsInBatchRequest request) {
         Services service = servicesRepository.findById(request.serviceId())
-                .orElseThrow(() -> new IllegalArgumentException("Serviço não encontrado"));
+                .orElseThrow(() -> new ServiceNotFoundException("Serviço não encontrado com ID: " + request.serviceId()));
 
         if (!service.isActive()) {
-            throw new IllegalArgumentException("Não é possível criar horários para um serviço inativo");
+            throw new InactiveServiceException("Não é possível criar horários para um serviço inativo");
         }
 
         if (!request.endDate().isAfter(request.startDate()) && !request.endDate().isEqual(request.startDate())) {
-            throw new IllegalArgumentException("A data final deve ser igual ou posterior à data inicial");
+            throw new InvalidTimeRangeException("A data final deve ser igual ou posterior à data inicial");
         }
 
         if (!request.endTime().isAfter(request.startTime())) {
-            throw new IllegalArgumentException("O horário de término deve ser após o horário de início");
+            throw new InvalidTimeRangeException("O horário de término deve ser após o horário de início");
         }
 
         List<TimeSlot> timeSlotsToSave = new ArrayList<>();
@@ -136,7 +142,7 @@ public class TimeSlotService {
         }
 
         if (timeSlotsToSave.isEmpty()) {
-            throw new IllegalArgumentException("Nenhum horário pôde ser criado. Verifique se já existem horários cadastrados no período.");
+            throw new TimeSlotConflictException("Nenhum horário pôde ser criado. Verifique se já existem horários cadastrados no período.");
         }
 
         List<TimeSlot> saved = timeSlotRepository.saveAll(timeSlotsToSave);
@@ -203,7 +209,7 @@ public class TimeSlotService {
 
     public TimeSlotResponse getTimeSlotById(UUID id) {
         TimeSlot timeSlot = timeSlotRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Horário não encontrado"));
+                .orElseThrow(() -> new TimeSlotNotFoundException("Horário não encontrado com ID: " + id));
 
         return mapToResponse(timeSlot);
     }
@@ -211,23 +217,23 @@ public class TimeSlotService {
     @Transactional
     public TimeSlotResponse updateTimeSlot(UUID id, CreateTimeSlotRequest request) {
         TimeSlot timeSlot = timeSlotRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Horário não encontrado"));
+                .orElseThrow(() -> new TimeSlotNotFoundException("Horário não encontrado com ID: " + id));
 
         // não permite alterar horário que já tem agendamentos
         if (timeSlot.getBookedCount() > 0) {
-            throw new IllegalArgumentException("Não é possível alterar um horário que já possui agendamentos");
+            throw new TimeSlotHasBookingsException("Não é possível alterar um horário que já possui agendamentos");
         }
 
         // valida se o novo serviço existe e está ativo
         Services service = servicesRepository.findById(request.serviceId())
-                .orElseThrow(() -> new IllegalArgumentException("Serviço não encontrado"));
+                .orElseThrow(() -> new ServiceNotFoundException("Serviço não encontrado com ID: " + request.serviceId()));
 
         if (!service.isActive()) {
-            throw new IllegalArgumentException("Não é possível vincular horário a um serviço inativo");
+            throw new InactiveServiceException("Não é possível vincular horário a um serviço inativo");
         }
 
         if (!request.endTime().isAfter(request.startTime())) {
-            throw new IllegalArgumentException("O horário de término deve ser após o horário de início");
+            throw new InvalidTimeRangeException("O horário de término deve ser após o horário de início");
         }
 
         // verifica conflito apenas se mudou data/horário/serviço
@@ -246,7 +252,7 @@ public class TimeSlotService {
             );
 
             if (hasConflict) {
-                throw new IllegalArgumentException("Já existe um horário cadastrado que conflita com este período");
+                throw new TimeSlotConflictException("Já existe um horário cadastrado que conflita com este período");
             }
         }
 
@@ -263,7 +269,7 @@ public class TimeSlotService {
     @Transactional
     public void deleteTimeSlot(UUID id) {
         TimeSlot timeSlot = timeSlotRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Horário não encontrado"));
+                .orElseThrow(() -> new TimeSlotNotFoundException("Horário não encontrado com ID: " + id));
 
         // soft delete - apenas desativa
         timeSlot.setActive(false);

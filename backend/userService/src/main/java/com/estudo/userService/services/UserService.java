@@ -4,6 +4,7 @@ import com.estudo.userService.dtos.PageResponse;
 import com.estudo.userService.dtos.UserResponse;
 import com.estudo.userService.dtos.UserUpdateRequest;
 import com.estudo.userService.entities.User;
+import com.estudo.userService.exceptions.UserNotFoundException;
 import com.estudo.userService.repository.UserRepository;
 import com.estudo.userService.specifications.UserSpecification;
 import org.springframework.data.domain.Page;
@@ -89,13 +90,13 @@ public class UserService {
 
     public UserResponse getUserById(UUID id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
+                .orElseThrow(UserNotFoundException::new);
         return mapToUserResponse(user);
     }
 
     public void toggleUserStatus(UUID id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
+                .orElseThrow(UserNotFoundException::new);
 
         user.setActive(!user.isActive());
         user.setUpdatedAt(LocalDateTime.now());

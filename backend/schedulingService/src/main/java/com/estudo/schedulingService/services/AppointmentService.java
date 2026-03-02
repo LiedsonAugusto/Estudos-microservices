@@ -8,6 +8,9 @@ import com.estudo.schedulingService.entities.Appointment;
 import com.estudo.schedulingService.entities.TimeSlot;
 import com.estudo.schedulingService.enums.AppointmentStatus;
 import com.estudo.schedulingService.exceptions.AppointmentNotFoundException;
+import com.estudo.schedulingService.exceptions.CancellationWindowExpiredException;
+import com.estudo.schedulingService.exceptions.DuplicateBookingException;
+import com.estudo.schedulingService.exceptions.InvalidAppointmentStatusException;
 import com.estudo.schedulingService.exceptions.NoSlotsAvailableException;
 import com.estudo.schedulingService.exceptions.TimeSlotNotFoundException;
 import com.estudo.schedulingService.producers.AppointmentProducer;
@@ -81,7 +84,7 @@ public class AppointmentService {
         );
 
         if (hasAppointmentInSameTimeSlot) {
-            throw new IllegalArgumentException("Você já possui um agendamento neste horário");
+            throw new DuplicateBookingException("Você já possui um agendamento neste horário");
         }
 
         // Validar se o usuário já tem agendamento para o mesmo serviço no mesmo dia
@@ -93,7 +96,7 @@ public class AppointmentService {
         );
 
         if (hasAppointmentForServiceInDate) {
-            throw new IllegalArgumentException(
+            throw new DuplicateBookingException(
                     "Você já possui um agendamento para este serviço na data " + timeSlot.getDate()
             );
         }
@@ -209,15 +212,15 @@ public class AppointmentService {
         }
 
         if (appointment.getStatus() == AppointmentStatus.CANCELLED) {
-            throw new IllegalArgumentException("Este agendamento já foi cancelado");
+            throw new InvalidAppointmentStatusException("Este agendamento já foi cancelado");
         }
 
         if (appointment.getStatus() == AppointmentStatus.COMPLETED) {
-            throw new IllegalArgumentException("Não é possível cancelar um agendamento já concluído");
+            throw new InvalidAppointmentStatusException("Não é possível cancelar um agendamento já concluído");
         }
 
         if (appointment.getStatus() == AppointmentStatus.NO_SHOW) {
-            throw new IllegalArgumentException("Não é possível cancelar um agendamento marcado como não comparecido");
+            throw new InvalidAppointmentStatusException("Não é possível cancelar um agendamento marcado como não comparecido");
         }
 
         TimeSlot timeSlot = appointment.getTimeSlot();
@@ -226,7 +229,7 @@ public class AppointmentService {
         long hoursUntilAppointment = ChronoUnit.HOURS.between(now, appointmentDateTime);
 
         if (hoursUntilAppointment < 24) {
-            throw new IllegalArgumentException("Cancelamento só é permitido até 24 horas antes do horário agendado");
+            throw new CancellationWindowExpiredException("Cancelamento só é permitido até 24 horas antes do horário agendado");
         }
 
         appointment.setStatus(AppointmentStatus.CANCELLED);
@@ -249,9 +252,7 @@ public class AppointmentService {
                 .orElseThrow(() -> new AppointmentNotFoundException("Agendamento não encontrado"));
 
         if (appointment.getStatus() != AppointmentStatus.SCHEDULED) {
-            throw new IllegalArgumentException(
-                    "Apenas agendamentos com status SCHEDULED podem ser confirmados. Status atual: " + appointment.getStatus()
-            );
+            throw new InvalidAppointmentStatusException(appointment.getStatus(), AppointmentStatus.SCHEDULED);
         }
 
         appointment.setStatus(AppointmentStatus.CONFIRMED);
@@ -268,9 +269,7 @@ public class AppointmentService {
                 .orElseThrow(() -> new AppointmentNotFoundException("Agendamento não encontrado"));
 
         if (appointment.getStatus() != AppointmentStatus.CONFIRMED && appointment.getStatus() != AppointmentStatus.SCHEDULED) {
-            throw new IllegalArgumentException(
-                    "Apenas agendamentos com status CONFIRMED ou SCHEDULED podem ser marcados como completados. Status atual: " + appointment.getStatus()
-            );
+            throw new InvalidAppointmentStatusException(appointment.getStatus(), AppointmentStatus.CONFIRMED, AppointmentStatus.SCHEDULED);
         }
 
         appointment.setStatus(AppointmentStatus.COMPLETED);
@@ -287,15 +286,15 @@ public class AppointmentService {
                 .orElseThrow(() -> new AppointmentNotFoundException("Agendamento não encontrado"));
 
         if (appointment.getStatus() == AppointmentStatus.CANCELLED) {
-            throw new IllegalArgumentException("Não é possível marcar como não comparecido um agendamento cancelado");
+            throw new InvalidAppointmentStatusException("Não é possível marcar como não comparecido um agendamento cancelado");
         }
 
         if (appointment.getStatus() == AppointmentStatus.COMPLETED) {
-            throw new IllegalArgumentException("Não é possível marcar como não comparecido um agendamento já concluído");
+            throw new InvalidAppointmentStatusException("Não é possível marcar como não comparecido um agendamento já concluído");
         }
 
         if (appointment.getStatus() == AppointmentStatus.NO_SHOW) {
-            throw new IllegalArgumentException("Este agendamento já está marcado como não comparecido");
+            throw new InvalidAppointmentStatusException("Este agendamento já está marcado como não comparecido");
         }
 
         appointment.setStatus(AppointmentStatus.NO_SHOW);

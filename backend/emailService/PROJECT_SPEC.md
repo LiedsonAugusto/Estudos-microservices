@@ -371,7 +371,7 @@ record AppointmentReminderEvent(
 
 **Responsabilidade:** Consumir eventos do RabbitMQ e enviar emails.
 
-**Status Atual:** Implementação parcial - apenas eventos de usuário criado.
+**Status Atual:** ✅ Implementação completa - eventos de usuário e agendamentos implementados.
 
 #### Dependências (pom.xml)
 
@@ -396,25 +396,30 @@ record AppointmentReminderEvent(
 </dependency>
 ```
 
-#### Configuração RabbitMQ (Implementado)
+#### Configuração RabbitMQ
 
 ```java
-// Exchange e Queues ATUAIS
+// Exchanges
 Exchange: user.exchange (topic)
-Queue: email.queue
-Bindings:
+Exchange: appointment.exchange (topic)
+
+// Queue única para todos os eventos
+Queue: email.queue (durável)
+
+// Bindings - Eventos de Usuário
   - user.created -> email.queue
 
-// TODO: Implementar no futuro
-Exchange: scheduling.exchange (topic)
-Bindings futuros:
+// Bindings - Eventos de Agendamento
   - appointment.created -> email.queue
   - appointment.cancelled -> email.queue
   - appointment.reminder -> email.queue
 ```
 
-#### Consumidores (Implementado)
+**Arquitetura:** Todos os eventos (usuário e agendamento) são roteados para a mesma fila `email.queue`. O Spring diferencia qual método consumidor chamar baseado no tipo do parâmetro do evento.
 
+#### Consumidores
+
+**1. UserEventConsumer.java**
 ```java
 @Component
 public class UserEventConsumer {
@@ -425,15 +430,38 @@ public class UserEventConsumer {
         emailService.sendEmailToUserCreated(event);
     }
 }
-
-// TODO: Implementar consumidores para eventos de agendamento
-// - handleAppointmentCreated()
-// - handleAppointmentCancelled()
-// - handleAppointmentReminder()
 ```
 
-#### Estrutura de Evento Atual
+**2. AppointmentEventConsumer.java**
+```java
+@Component
+public class AppointmentEventConsumer {
 
+    @RabbitListener(queues = "${rabbitmq.queue.email}")
+    public void handleAppointmentCreated(AppointmentCreatedEvent event) {
+        // Log detalhado + envio de email de confirmação
+        emailService.sendEmailToAppointmentCreated(event);
+    }
+
+    @RabbitListener(queues = "${rabbitmq.queue.email}")
+    public void handleAppointmentCancelled(AppointmentCancelledEvent event) {
+        // Log detalhado + envio de email de cancelamento
+        emailService.sendEmailToAppointmentCancelled(event);
+    }
+
+    @RabbitListener(queues = "${rabbitmq.queue.email}")
+    public void handleAppointmentReminder(AppointmentReminderEvent event) {
+        // Log detalhado + envio de email de lembrete
+        emailService.sendEmailToAppointmentReminder(event);
+    }
+}
+```
+
+**Observação:** Os 3 métodos escutam a mesma fila. O Spring diferencia automaticamente qual método chamar baseado no tipo do parâmetro (Jackson faz o match do JSON com o tipo correto).
+
+#### DTOs de Eventos
+
+**UserCreatedEvent.java**
 ```java
 public record UserCreatedEvent(
     UUID userId,
@@ -443,7 +471,49 @@ public record UserCreatedEvent(
 ) {}
 ```
 
-#### Email Service (Implementado)
+**AppointmentCreatedEvent.java**
+```java
+public record AppointmentCreatedEvent(
+    UUID appointmentId,
+    String userEmail,
+    String userName,
+    String serviceName,
+    LocalDate date,
+    LocalTime time,
+    String confirmationCode,
+    LocalDateTime timestamp
+) {}
+```
+
+**AppointmentCancelledEvent.java**
+```java
+public record AppointmentCancelledEvent(
+    UUID appointmentId,
+    String userEmail,
+    String userName,
+    String serviceName,
+    LocalDate date,
+    LocalTime time,
+    String reason,
+    LocalDateTime timestamp
+) {}
+```
+
+**AppointmentReminderEvent.java**
+```java
+public record AppointmentReminderEvent(
+    UUID appointmentId,
+    String userEmail,
+    String userName,
+    String serviceName,
+    LocalDate date,
+    LocalTime time,
+    String confirmationCode,
+    LocalDateTime timestamp
+) {}
+```
+
+#### Email Service
 
 ```java
 @Service
@@ -454,6 +524,7 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
+    // Email de boas-vindas
     public void sendEmailToUserCreated(UserCreatedEvent event) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(sender);
@@ -467,31 +538,104 @@ public class EmailService {
         mailSender.send(message);
     }
 
-    // TODO: Adicionar métodos para outros tipos de email
+    // Email de confirmação de agendamento
+    public void sendEmailToAppointmentCreated(AppointmentCreatedEvent event) {
+        String dataFormatada = event.date().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        String horaFormatada = event.time().format(DateTimeFormatter.ofPattern("HH:mm"));
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(sender);
+        message.setTo(event.userEmail());
+        message.setSubject("Agendamento Confirmado - " + event.serviceName());
+        message.setText(
+            "Olá " + event.userName() + ",\n\n" +
+            "Seu agendamento foi confirmado com sucesso!\n\n" +
+            "Detalhes do Agendamento:\n" +
+            "- Serviço: " + event.serviceName() + "\n" +
+            "- Data: " + dataFormatada + "\n" +
+            "- Horário: " + horaFormatada + "\n" +
+            "- Código de Confirmação: " + event.confirmationCode() + "\n\n" +
+            "IMPORTANTE: Guarde este código! Você precisará dele no dia do atendimento.\n\n" +
+            "Atenciosamente,\n" +
+            "Equipe de Agendamentos"
+        );
+        mailSender.send(message);
+    }
+
+    // Email de cancelamento
+    public void sendEmailToAppointmentCancelled(AppointmentCancelledEvent event) {
+        String dataFormatada = event.date().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        String horaFormatada = event.time().format(DateTimeFormatter.ofPattern("HH:mm"));
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(sender);
+        message.setTo(event.userEmail());
+        message.setSubject("Agendamento Cancelado - " + event.serviceName());
+        message.setText(
+            "Olá " + event.userName() + ",\n\n" +
+            "Seu agendamento foi cancelado.\n\n" +
+            "Detalhes do Agendamento Cancelado:\n" +
+            "- Serviço: " + event.serviceName() + "\n" +
+            "- Data: " + dataFormatada + "\n" +
+            "- Horário: " + horaFormatada + "\n" +
+            "- Motivo: " + event.reason() + "\n\n" +
+            "Você pode fazer um novo agendamento quando desejar.\n\n" +
+            "Atenciosamente,\n" +
+            "Equipe de Agendamentos"
+        );
+        mailSender.send(message);
+    }
+
+    // Email de lembrete
+    public void sendEmailToAppointmentReminder(AppointmentReminderEvent event) {
+        String dataFormatada = event.date().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        String horaFormatada = event.time().format(DateTimeFormatter.ofPattern("HH:mm"));
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(sender);
+        message.setTo(event.userEmail());
+        message.setSubject("Lembrete: Seu agendamento é amanhã!");
+        message.setText(
+            "Olá " + event.userName() + ",\n\n" +
+            "Lembramos que você tem um atendimento agendado para AMANHÃ!\n\n" +
+            "Detalhes:\n" +
+            "- Serviço: " + event.serviceName() + "\n" +
+            "- Data: " + dataFormatada + "\n" +
+            "- Horário: " + horaFormatada + "\n" +
+            "- Código de Confirmação: " + event.confirmationCode() + "\n\n" +
+            "Não esqueça de levar seus documentos e chegar com 10 minutos de antecedência.\n\n" +
+            "Atenciosamente,\n" +
+            "Equipe de Agendamentos"
+        );
+        mailSender.send(message);
+    }
 }
 ```
 
-#### Templates de Email (Implementado)
+#### Templates de Email
 
-**Status:** Atualmente usando texto simples (SimpleMailMessage)
+**Status:** Usando texto simples (SimpleMailMessage)
 
 1. **Boas-vindas** ✅ IMPLEMENTADO
    - Assunto: "Bem-vindo ao Sistema de Agendamentos!"
    - Corpo: Mensagem de texto simples com saudação e instruções básicas
 
-**TODO - Templates futuros:**
-
-2. **Confirmação de Agendamento** ❌ NÃO IMPLEMENTADO
+2. **Confirmação de Agendamento** ✅ IMPLEMENTADO
    - Assunto: "Agendamento Confirmado - {serviceName}"
-   - Corpo: Nome do cidadão, serviço, data/hora, código de confirmação, instruções
+   - Corpo: Nome do cidadão, serviço, data/hora formatados (dd/MM/yyyy e HH:mm), código de confirmação, instruções
 
-3. **Cancelamento** ❌ NÃO IMPLEMENTADO
+3. **Cancelamento** ✅ IMPLEMENTADO
    - Assunto: "Agendamento Cancelado - {serviceName}"
-   - Corpo: Confirmação do cancelamento, orientações para novo agendamento
+   - Corpo: Confirmação do cancelamento com motivo, data/hora, orientações para novo agendamento
 
-4. **Lembrete** ❌ NÃO IMPLEMENTADO
+4. **Lembrete** ✅ IMPLEMENTADO
    - Assunto: "Lembrete: Seu agendamento é amanhã!"
-   - Corpo: Detalhes do agendamento, código de confirmação, documentos necessários
+   - Corpo: Detalhes do agendamento, data/hora, código de confirmação, lembrete de documentos
+
+**Melhorias Futuras:**
+- Migrar para templates HTML responsivos (Thymeleaf ou FreeMarker)
+- Adicionar logotipo e identidade visual
+- Personalização avançada com variáveis dinâmicas
 
 #### Configuração SMTP
 
@@ -517,8 +661,17 @@ spring.mail.properties.mail.smtp.starttls.enable=true
 ```properties
 spring.rabbitmq.addresses=amqps://[user]:[pass]@[host]/[vhost]
 
+# Configurações de User Events
 rabbitmq.exchange.user=user.exchange
 rabbitmq.routingkey.user.created=user.created
+
+# Configurações de Appointment Events
+rabbitmq.exchange.appointment=appointment.exchange
+rabbitmq.routingkey.appointment.created=appointment.created
+rabbitmq.routingkey.appointment.cancelled=appointment.cancelled
+rabbitmq.routingkey.appointment.reminder=appointment.reminder
+
+# Fila única para todos os eventos
 rabbitmq.queue.email=email.queue
 ```
 
@@ -880,49 +1033,70 @@ cd frontend && npm run dev
    - Maven como build tool
    - Lombok para redução de boilerplate
 
-2. **RabbitMQ**
+2. **RabbitMQ - Infraestrutura**
    - Conexão com CloudAMQP
-   - Queue `email.queue` criada e configurada
+   - Queue `email.queue` criada e configurada (durável)
    - Exchange `user.exchange` (topic) configurado
-   - Binding `user.created` -> `email.queue`
+   - Exchange `appointment.exchange` (topic) configurado
+   - 4 Bindings implementados:
+     - `user.created` -> `email.queue`
+     - `appointment.created` -> `email.queue`
+     - `appointment.cancelled` -> `email.queue`
+     - `appointment.reminder` -> `email.queue`
    - Conversão JSON automática com Jackson
 
-3. **Consumidor de Eventos**
+3. **Consumidores de Eventos**
    - `UserEventConsumer` implementado
-   - Processamento de eventos `UserCreatedEvent`
-   - Logging detalhado de eventos recebidos
-   - Tratamento de erros com try-catch
+     - Processamento de `UserCreatedEvent`
+   - `AppointmentEventConsumer` implementado
+     - Processamento de `AppointmentCreatedEvent`
+     - Processamento de `AppointmentCancelledEvent`
+     - Processamento de `AppointmentReminderEvent`
+   - Logging detalhado de todos os eventos recebidos
+   - Tratamento de erros com try-catch em todos os consumers
 
-4. **Envio de Emails**
+4. **DTOs de Eventos**
+   - `UserCreatedEvent`
+   - `AppointmentCreatedEvent`
+   - `AppointmentCancelledEvent`
+   - `AppointmentReminderEvent`
+
+5. **Envio de Emails**
    - Integração com Gmail SMTP
-   - Email de boas-vindas em texto simples
+   - 4 tipos de emails implementados:
+     - Email de boas-vindas (UserCreated)
+     - Email de confirmação de agendamento (AppointmentCreated)
+     - Email de cancelamento (AppointmentCancelled)
+     - Email de lembrete (AppointmentReminder)
+   - Formatação de data/hora (dd/MM/yyyy e HH:mm)
    - Configuração STARTTLS e autenticação
+   - Todos usando SimpleMailMessage (texto simples)
 
-### ❌ Pendente / TODO
+### 🚧 Melhorias Futuras
 
-1. **Eventos de Agendamento**
-   - Consumidor para `AppointmentCreatedEvent`
-   - Consumidor para `AppointmentCancelledEvent`
-   - Consumidor para `AppointmentReminderEvent`
-   - Exchange `scheduling.exchange`
-
-2. **Templates de Email**
+1. **Templates de Email**
    - Migrar de texto simples para HTML
    - Template engine (Thymeleaf ou FreeMarker)
    - Templates responsivos
+   - Logotipo e identidade visual
    - Personalização avançada
 
-3. **Melhorias**
+2. **Resiliência e Confiabilidade**
    - Retry policy para falhas de envio
    - Dead Letter Queue (DLQ)
+   - Circuit Breaker para SMTP
    - Persistência de histórico de emails enviados
-   - Testes unitários e integração
-   - Docker Compose local para desenvolvimento
 
-4. **Segurança**
-   - Remover credenciais do `application.properties`
-   - Usar variáveis de ambiente
-   - Implementar configuração por profiles (dev, prod)
+3. **Testes**
+   - Testes unitários dos services
+   - Testes de integração com RabbitMQ (Testcontainers)
+   - Testes com MailHog/Mailtrap
+
+4. **Infraestrutura**
+   - Docker Compose local para desenvolvimento
+   - Configuração por profiles (dev, prod)
+   - Usar variáveis de ambiente para credenciais
+   - Health checks e métricas (Actuator)
 
 ---
 
@@ -936,13 +1110,14 @@ cd frontend && npm run dev
 
 **Email Service - Contexto Atual:**
 - Primeiro microserviço da arquitetura a ser implementado
-- Foco inicial em comunicação assíncrona com RabbitMQ
-- Usando serviços hospedados para acelerar o desenvolvimento
-- Implementação incremental: começou com eventos de usuário, expandirá para agendamentos
+- Foco em comunicação assíncrona com RabbitMQ
+- Usando serviços hospedados (CloudAMQP, Gmail SMTP) para acelerar o desenvolvimento
+- Implementação básica completa: eventos de usuário e agendamentos funcionando
+- Próximos passos: melhorias em templates HTML, resiliência e testes
 
 Ao ajudar neste projeto, considere:
 - Explicar o "porquê" das decisões arquiteturais
 - Sugerir boas práticas de Spring Boot e Next.js
 - Apontar possíveis armadilhas em comunicação assíncrona
 - Manter consistência com as definições deste documento
-- O email-service está em implementação parcial - muitas features ainda serão adicionadas
+- O email-service tem funcionalidades básicas implementadas, mas pode receber melhorias (HTML templates, retry policies, etc.)

@@ -1,0 +1,89 @@
+# =============================================================================
+# EMAIL SERVICE - CONFIGURAÇÃO DE EXEMPLO
+# =============================================================================
+#
+# INSTRUÇÕES:
+# 1. Copie este arquivo para application.properties
+# 2. Substitua os valores de exemplo pelos seus valores reais
+# 3. NUNCA commite o application.properties com suas credenciais!
+#
+# =============================================================================
+
+# Nome da aplicação
+spring.application.name=emailService
+
+# Porta do servidor
+server.port=8083
+
+# =============================================================================
+# RABBITMQ - Message Broker
+# =============================================================================
+
+# Conexão com RabbitMQ
+# Para CloudAMQP: obtenha a URL em https://customer.cloudamqp.com/
+# Para local: spring.rabbitmq.host=localhost, spring.rabbitmq.port=5672
+spring.rabbitmq.addresses=amqps://usuario:senha@host.cloudamqp.com/vhost
+
+# Exchanges - Pontos de roteamento de mensagens
+rabbitmq.exchange.user=user.exchange
+rabbitmq.exchange.appointment=appointment.exchange
+
+# Routing Keys - Eventos de Usuário
+rabbitmq.routingkey.user.created=user.created
+
+# Routing Keys - Eventos de Agendamento
+rabbitmq.routingkey.appointment.created=appointment.created
+rabbitmq.routingkey.appointment.cancelled=appointment.cancelled
+rabbitmq.routingkey.appointment.reminder=appointment.reminder
+
+# Queue - Fila única para todos os eventos
+rabbitmq.queue.email=email.queue
+
+# =============================================================================
+# SMTP - Configuração de Email
+# =============================================================================
+
+# Servidor SMTP (Gmail)
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+
+# Credenciais do Gmail
+# IMPORTANTE: Use uma "Senha de App", não sua senha normal!
+# Como criar: https://support.google.com/accounts/answer/185833
+spring.mail.username=seu-email@gmail.com
+spring.mail.password=sua-senha-de-app-aqui
+
+# Configurações de autenticação e segurança
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+
+# =============================================================================
+# NOTAS IMPORTANTES
+# =============================================================================
+#
+# GMAIL - SENHA DE APP:
+# - Não use sua senha normal do Gmail!
+# - Crie uma "Senha de App" em: https://myaccount.google.com/apppasswords
+# - A senha de app tem 16 caracteres sem espaços
+#
+# RABBITMQ LOCAL (alternativa ao CloudAMQP):
+# - Comente a linha spring.rabbitmq.addresses
+# - Descomente e configure:
+#   spring.rabbitmq.host=localhost
+#   spring.rabbitmq.port=5672
+#   spring.rabbitmq.username=guest
+#   spring.rabbitmq.password=guest
+#
+# MAILHOG (alternativa ao Gmail para testes):
+# - Use para não enviar emails reais em desenvolvimento
+# - Docker: docker run -d -p 1025:1025 -p 8025:8025 mailhog/mailhog
+# - Configure:
+#   spring.mail.host=localhost
+#   spring.mail.port=1025
+#   spring.mail.username=
+#   spring.mail.password=
+#   spring.mail.properties.mail.smtp.auth=false
+#   spring.mail.properties.mail.smtp.starttls.enable=false
+# - Web UI: http://localhost:8025
+#
+# =============================================================================

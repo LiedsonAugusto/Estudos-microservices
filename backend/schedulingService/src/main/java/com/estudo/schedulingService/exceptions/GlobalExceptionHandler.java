@@ -81,6 +81,90 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
+    @ExceptionHandler(InvalidAppointmentStatusException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidAppointmentStatusException(
+            InvalidAppointmentStatusException ex,
+            HttpServletRequest request) {
+        Map<String, Object> error = buildErrorResponse(
+                HttpStatus.CONFLICT.value(),
+                "Conflict",
+                ex.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(DuplicateBookingException.class)
+    public ResponseEntity<Map<String, Object>> handleDuplicateBookingException(
+            DuplicateBookingException ex,
+            HttpServletRequest request) {
+        Map<String, Object> error = buildErrorResponse(
+                HttpStatus.CONFLICT.value(),
+                "Conflict",
+                ex.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(TimeSlotConflictException.class)
+    public ResponseEntity<Map<String, Object>> handleTimeSlotConflictException(
+            TimeSlotConflictException ex,
+            HttpServletRequest request) {
+        Map<String, Object> error = buildErrorResponse(
+                HttpStatus.CONFLICT.value(),
+                "Conflict",
+                ex.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(TimeSlotHasBookingsException.class)
+    public ResponseEntity<Map<String, Object>> handleTimeSlotHasBookingsException(
+            TimeSlotHasBookingsException ex,
+            HttpServletRequest request) {
+        Map<String, Object> error = buildErrorResponse(
+                HttpStatus.CONFLICT.value(),
+                "Conflict",
+                ex.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(CancellationWindowExpiredException.class)
+    public ResponseEntity<Map<String, Object>> handleCancellationWindowExpiredException(
+            CancellationWindowExpiredException ex,
+            HttpServletRequest request) {
+        Map<String, Object> error = buildErrorResponse(
+                HttpStatus.UNPROCESSABLE_ENTITY.value(),
+                "Unprocessable Entity",
+                ex.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
+    }
+
+    @ExceptionHandler(InactiveServiceException.class)
+    public ResponseEntity<Map<String, Object>> handleInactiveServiceException(
+            InactiveServiceException ex,
+            HttpServletRequest request) {
+        Map<String, Object> error = buildErrorResponse(
+                HttpStatus.UNPROCESSABLE_ENTITY.value(),
+                "Unprocessable Entity",
+                ex.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
+    }
+
+    @ExceptionHandler(InvalidTimeRangeException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidTimeRangeException(
+            InvalidTimeRangeException ex,
+            HttpServletRequest request) {
+        Map<String, Object> error = buildErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                ex.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationException(
             MethodArgumentNotValidException ex,
