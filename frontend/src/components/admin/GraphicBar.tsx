@@ -31,10 +31,6 @@ export default function GraphicBar() {
     const cancelados = [3, 5, 2, 4, 6, 3, 4];
 
     return {
-      title: {
-        text: 'Atendimentos por dia (últimos 7 dias)',
-        subtext: 'A última barra representa hoje'
-      },
       tooltip: {
         trigger: 'axis'
       },

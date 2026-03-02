@@ -1,7 +1,9 @@
-"use client"
+'use client'
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { useTheme } from 'next-themes'
+import { useEffect, useState } from 'react'
 import {
   CalendarCheck,
   LayoutDashboard,
@@ -10,39 +12,29 @@ import {
   CalendarDays,
   Users,
   LogOut,
-} from "lucide-react"
-import { cn } from "@/lib/utils"
+  Sun,
+  Moon,
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 const navItems = [
-  {
-    label: "Dashboard",
-    href: "/admin",
-    icon: LayoutDashboard,
-  },
-  {
-    label: "Serviços",
-    href: "/admin/services",
-    icon: Briefcase,
-  },
-  {
-    label: "Horários",
-    href: "/admin/time-slots",
-    icon: Clock,
-  },
-  {
-    label: "Agendamentos",
-    href: "/admin/appointments",
-    icon: CalendarDays,
-  },
-  {
-    label: "Usuários",
-    href: "/admin/users",
-    icon: Users,
-  },
+  { label: 'Dashboard',    href: '/admin',            icon: LayoutDashboard },
+  { label: 'Serviços',     href: '/services',   icon: Briefcase       },
+  { label: 'Horários',     href: '/time-slots', icon: Clock           },
+  { label: 'Agendamentos', href: '/appointments',icon: CalendarDays   },
+  { label: 'Usuários',     href: '/users',      icon: Users           },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const isDark = theme === 'dark'
 
   return (
     <aside className="flex flex-col w-64 min-h-screen bg-blue-700 text-white">
@@ -58,8 +50,8 @@ export function Sidebar() {
         {navItems.map((item) => {
           const Icon = item.icon
           const isActive =
-            item.href === "/admin"
-              ? pathname === "/admin"
+            item.href === '/admin'
+              ? pathname === '/admin'
               : pathname.startsWith(item.href)
 
           return (
@@ -67,10 +59,10 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                 isActive
-                  ? "bg-white text-blue-700"
-                  : "text-blue-100 hover:bg-blue-600"
+                  ? 'bg-white text-blue-700'
+                  : 'text-blue-100 hover:bg-blue-600'
               )}
             >
               <Icon className="w-5 h-5" />
@@ -80,8 +72,21 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Usuário + Logout */}
+      {/* Tema + Usuário + Logout */}
       <div className="border-t border-blue-600 px-4 py-4 space-y-3">
+
+        {/* Toggle de tema */}
+        {mounted && (
+          <button
+            onClick={() => setTheme(isDark ? 'light' : 'dark')}
+            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-blue-100 hover:bg-blue-600 transition-colors cursor-pointer"
+          >
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            {isDark ? 'Tema claro' : 'Tema escuro'}
+          </button>
+        )}
+
+        {/* Usuário */}
         <div className="flex items-center gap-3 px-2">
           <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-sm font-bold">
             A
@@ -92,12 +97,15 @@ export function Sidebar() {
           </div>
         </div>
 
-        <Link href="/login" className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-blue-100 hover:bg-blue-600 transition-colors">
+        <Link
+          href="/login"
+          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-blue-100 hover:bg-blue-600 transition-colors"
+        >
           <LogOut className="w-4 h-4" />
           Sair
         </Link>
-      </div>
 
+      </div>
     </aside>
   )
 }
