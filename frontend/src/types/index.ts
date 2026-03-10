@@ -33,3 +33,26 @@ export type AdminAppointment = {
   notes?: string
   cancellationReason?: string
 }
+
+export type TimeSlot = {
+  id: string
+  serviceId: string
+  serviceName: string
+  date: string
+  startTime: string
+  endTime: string
+  totalSlots: number
+  availableSlots: number
+  active: boolean
+}
+
+export type UserRole = 'ADMIN' | 'CITIZEN'
+
+export type AdminUser = {
+  id: string
+  name: string
+  email: string
+  cpf: string
+  role: UserRole
+  active: boolean
+}
