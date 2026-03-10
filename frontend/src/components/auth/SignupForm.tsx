@@ -79,13 +79,11 @@ export function SignupForm() {
   const { isSubmitting } = form.formState
 
   function onSubmit(data: SignupFormData) {
-    // Remove máscaras antes de enviar para a API
     const payload = {
       ...data,
       cpf: data.cpf.replace(/\D/g, ""),
       phone: data.phone.replace(/\D/g, ""),
     }
-    // integração com API futuramente
     console.log(payload)
   }
 

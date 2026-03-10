@@ -71,7 +71,7 @@ public class AppointmentService {
             throw new NoSlotsAvailableException("Não há mais vagas disponíveis para este horário");
         }
 
-        // Validar se o usuário já tem agendamento no mesmo horário
+        // validar se o usuário já tem agendamento no mesmo horário
         List<AppointmentStatus> excludedStatuses = List.of(
                 AppointmentStatus.CANCELLED,
                 AppointmentStatus.NO_SHOW
@@ -87,7 +87,7 @@ public class AppointmentService {
             throw new DuplicateBookingException("Você já possui um agendamento neste horário");
         }
 
-        // Validar se o usuário já tem agendamento para o mesmo serviço no mesmo dia
+        // validar se o usuário já tem agendamento para o mesmo serviço no mesmo dia
         boolean hasAppointmentForServiceInDate = appointmentRepository.existsActiveAppointmentForUserInServiceAndDate(
                 userId,
                 timeSlot.getService().getId(),
@@ -162,7 +162,7 @@ public class AppointmentService {
         Appointment appointment = appointmentRepository.findByConfirmationCode(confirmationCode)
                 .orElseThrow(() -> new AppointmentNotFoundException("Agendamento não encontrado com este código de confirmação"));
 
-        // Verificar se o usuário tem permissão para ver este appointment
+        // verificar se o usuário tem permissão para ver este appointment
         if (!"ADMIN".equals(role) && !appointment.getUserId().equals(userId)) {
             throw new AppointmentNotFoundException("Agendamento não encontrado com este código de confirmação");
         }

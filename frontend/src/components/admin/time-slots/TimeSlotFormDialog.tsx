@@ -198,7 +198,6 @@ export function TimeSlotFormDialog({ open, onOpenChange, timeSlot, services, onS
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col gap-4">
 
-            {/* Modo: unitário ou em lote (apenas na criação) */}
             {!isEditing && (
               <div className="flex rounded-lg border border-border overflow-hidden">
                 <button
@@ -228,7 +227,6 @@ export function TimeSlotFormDialog({ open, onOpenChange, timeSlot, services, onS
               </div>
             )}
 
-            {/* Serviço */}
             <FormField
               control={form.control}
               name="serviceId"
@@ -254,7 +252,6 @@ export function TimeSlotFormDialog({ open, onOpenChange, timeSlot, services, onS
               )}
             />
 
-            {/* Modo unitário: data única */}
             {mode === 'single' && (
               <FormField
                 control={form.control}
@@ -271,7 +268,6 @@ export function TimeSlotFormDialog({ open, onOpenChange, timeSlot, services, onS
               />
             )}
 
-            {/* Modo em lote: período + dias da semana */}
             {mode === 'batch' && (
               <>
                 <div className="grid grid-cols-2 gap-3">
@@ -345,7 +341,6 @@ export function TimeSlotFormDialog({ open, onOpenChange, timeSlot, services, onS
               </>
             )}
 
-            {/* Hora de início + fim (calculado) */}
             <div className="grid grid-cols-2 gap-3">
               <FormField
                 control={form.control}
@@ -368,7 +363,6 @@ export function TimeSlotFormDialog({ open, onOpenChange, timeSlot, services, onS
               </div>
             </div>
 
-            {/* Total de vagas */}
             <FormField
               control={form.control}
               name="totalSlots"

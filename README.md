@@ -84,3 +84,9 @@ Depois execute:
 ```
 
 Consulte o README de cada serviço para detalhes específicos de configuração.
+
+### Status do projeto
+
+Em andamento
+
+---

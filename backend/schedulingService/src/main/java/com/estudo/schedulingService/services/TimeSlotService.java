@@ -68,7 +68,6 @@ public class TimeSlotService {
             throw new TimeSlotConflictException("Já existe um horário cadastrado que conflita com este período");
         }
 
-        // 4. Criar a entidade
         TimeSlot timeSlot = new TimeSlot();
         timeSlot.setService(service);
         timeSlot.setDate(request.date());

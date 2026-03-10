@@ -39,13 +39,11 @@ export function Sidebar() {
   return (
     <aside className="flex flex-col w-64 min-h-screen bg-blue-700 text-white">
 
-      {/* Logo */}
       <div className="flex items-center gap-3 px-6 py-5 border-b border-blue-600">
         <CalendarCheck className="w-7 h-7" />
         <span className="text-lg font-semibold">AgendaFácil</span>
       </div>
 
-      {/* Navegação */}
       <nav className="flex flex-col gap-1 px-3 py-4 flex-1">
         {navItems.map((item) => {
           const Icon = item.icon
@@ -71,11 +69,8 @@ export function Sidebar() {
           )
         })}
       </nav>
-
-      {/* Tema + Usuário + Logout */}
       <div className="border-t border-blue-600 px-4 py-4 space-y-3">
 
-        {/* Toggle de tema */}
         {mounted && (
           <button
             onClick={() => setTheme(isDark ? 'light' : 'dark')}
@@ -86,7 +81,6 @@ export function Sidebar() {
           </button>
         )}
 
-        {/* Usuário */}
         <div className="flex items-center gap-3 px-2">
           <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-sm font-bold">
             A
