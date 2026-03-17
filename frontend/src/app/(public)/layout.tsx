@@ -15,7 +15,7 @@ export default function AuthLayout({
     <div className="min-h-screen grid md:grid-cols-2">
 
       {/* Lado esquerdo — branding (oculto no mobile) */}
-      <div className="hidden md:flex flex-col justify-between bg-blue-700 text-white p-12">
+      <div className="hidden md:flex flex-col justify-between bg-indigo-600 dark:bg-indigo-950 text-white p-12">
 
         <div className="flex items-center gap-3">
           <CalendarCheck className="w-8 h-8" />
@@ -26,12 +26,12 @@ export default function AuthLayout({
           <h1 className="text-4xl font-bold leading-tight">
             Agende seu atendimento sem sair de casa.
           </h1>
-          <p className="text-blue-200 text-lg">
+          <p className="text-indigo-200 text-lg">
             Acesse os serviços públicos de forma rápida, simples e sem filas.
           </p>
         </div>
 
-        <p className="text-blue-300 text-sm">
+        <p className="text-indigo-300 text-sm">
           © {new Date().getFullYear()} AgendaFácil. Todos os direitos reservados.
         </p>
 
@@ -42,8 +42,8 @@ export default function AuthLayout({
 
         {/* Logo visível apenas no mobile */}
         <div className="flex items-center gap-2 mb-8 md:hidden">
-          <CalendarCheck className="w-6 h-6 text-blue-700" />
-          <span className="text-lg font-semibold text-blue-700">AgendaFácil</span>
+          <CalendarCheck className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+          <span className="text-lg font-semibold text-indigo-600 dark:text-indigo-400">AgendaFácil</span>
         </div>
 
         <div className="w-full max-w-sm">

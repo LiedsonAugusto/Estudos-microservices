@@ -1,7 +1,7 @@
 export type Service = {
   id: string
   name: string
-  description: string
+  description?: string
   durationMinutes: number
   active: boolean
 }
@@ -56,3 +56,22 @@ export type AdminUser = {
   role: UserRole
   active: boolean
 }
+
+export type CitizenAppointment = {
+  id: string
+  confirmationCode: string
+  serviceName: string
+  date: string
+  time: string
+  status: AppointmentStatus
+}
+
+export type CitizenProfile = {
+  id: string
+  name: string
+  email: string
+  cpf: string
+  phone: string
+}
+
+export type BookingStep = 'service' | 'date' | 'time' | 'confirm'

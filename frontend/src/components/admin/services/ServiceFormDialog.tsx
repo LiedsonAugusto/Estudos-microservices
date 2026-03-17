@@ -27,7 +27,7 @@ const schema = z.object({
   name: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
   description: z.string().optional(),
   durationMinutes: z
-    .number({ invalid_type_error: 'Informe a duração' })
+    .number({ error: 'Informe a duração' })
     .min(1, 'Duração mínima é 1 minuto'),
 })
 

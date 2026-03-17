@@ -50,7 +50,7 @@ const schema = z.object({
   weekdays: z.array(z.number()).optional(),
   startTime: z.string().min(1, 'Informe o horário de início'),
   totalSlots: z
-    .number({ invalid_type_error: 'Informe o número de vagas' })
+    .number({ error: 'Informe o número de vagas' })
     .min(1, 'Mínimo de 1 vaga'),
 }).superRefine((data, ctx) => {
   if (data.mode === 'single') {

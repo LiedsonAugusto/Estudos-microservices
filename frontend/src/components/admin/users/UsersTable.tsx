@@ -14,7 +14,7 @@ import {
 
 const ROLE_CONFIG: Record<UserRole, { label: string; className: string }> = {
   ADMIN:   { label: 'Admin',    className: 'bg-purple-100 text-purple-700 border-purple-200' },
-  CITIZEN: { label: 'Cidadão', className: 'bg-blue-100 text-blue-700 border-blue-200' },
+  CITIZEN: { label: 'Cidadão', className: 'bg-indigo-50 text-indigo-600 border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-900' },
 }
 
 function formatCPF(cpf: string) {

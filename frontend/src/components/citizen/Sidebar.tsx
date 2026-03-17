@@ -6,11 +6,10 @@ import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'
 import {
   CalendarCheck,
-  LayoutDashboard,
-  Briefcase,
-  Clock,
+  Home,
+  CalendarPlus,
   CalendarDays,
-  Users,
+  User,
   LogOut,
   Sun,
   Moon,
@@ -18,14 +17,13 @@ import {
 import { cn } from '@/lib/utils'
 
 const navItems = [
-  { label: 'Dashboard',    href: '/admin',            icon: LayoutDashboard },
-  { label: 'Serviços',     href: '/services',   icon: Briefcase       },
-  { label: 'Horários',     href: '/time-slots', icon: Clock           },
-  { label: 'Agendamentos', href: '/appointments',icon: CalendarDays   },
-  { label: 'Usuários',     href: '/users',      icon: Users           },
+  { label: 'Início',             href: '/home',               icon: Home },
+  { label: 'Agendar',            href: '/agendar',            icon: CalendarPlus },
+  { label: 'Meus Agendamentos',  href: '/meus-agendamentos',  icon: CalendarDays },
+  { label: 'Meu Perfil',         href: '/perfil',             icon: User },
 ]
 
-export function Sidebar() {
+export function CitizenSidebar() {
   const pathname = usePathname()
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
@@ -48,8 +46,8 @@ export function Sidebar() {
         {navItems.map((item) => {
           const Icon = item.icon
           const isActive =
-            item.href === '/admin'
-              ? pathname === '/admin'
+            item.href === '/home'
+              ? pathname === '/home'
               : pathname.startsWith(item.href)
 
           return (
@@ -69,6 +67,7 @@ export function Sidebar() {
           )
         })}
       </nav>
+
       <div className="border-t border-indigo-500 dark:border-indigo-900 px-4 py-4 space-y-3">
 
         {mounted && (
@@ -83,11 +82,11 @@ export function Sidebar() {
 
         <div className="flex items-center gap-3 px-2">
           <div className="w-8 h-8 rounded-full bg-indigo-400 dark:bg-indigo-800 flex items-center justify-center text-sm font-bold">
-            A
+            M
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="text-sm font-medium truncate">Administrador</span>
-            <span className="text-xs text-indigo-200 dark:text-indigo-400 truncate">admin@email.com</span>
+            <span className="text-sm font-medium truncate">Maria Lima</span>
+            <span className="text-xs text-indigo-200 dark:text-indigo-400 truncate">maria@email.com</span>
           </div>
         </div>
 

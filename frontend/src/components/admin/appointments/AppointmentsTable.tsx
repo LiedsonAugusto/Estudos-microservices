@@ -25,7 +25,7 @@ import {
 import { cn } from '@/lib/utils'
 
 const STATUS_CONFIG: Record<AppointmentStatus, { label: string; className: string }> = {
-  SCHEDULED: { label: 'Agendado',       className: 'bg-blue-100 text-blue-700 border-blue-200' },
+  SCHEDULED: { label: 'Agendado',       className: 'bg-indigo-50 text-indigo-600 border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-900' },
   CONFIRMED: { label: 'Confirmado',     className: 'bg-green-100 text-green-700 border-green-200' },
   COMPLETED: { label: 'Concluído',      className: 'bg-gray-100 text-gray-600 border-gray-200' },
   CANCELLED: { label: 'Cancelado',      className: 'bg-red-100 text-red-700 border-red-200' },
